@@ -115,3 +115,91 @@ def sms_to_mrdf(s,sMs):
         area = metrics.auc(s,y)
         mrdf.append(area)
     return mrdf
+
+def find_z(xyz):
+    """ This functon retuns the atomic numbers of the elements in the molecule into a list
+        (Currently only functional for H,C and O)
+    """
+    z = []
+    for i in range(len(xyz)):
+        if xyz.iloc[i,0] == 'H':
+            z.append(1)
+        elif xyz.iloc[i,0] == 'C':
+            z.append(6)
+        elif xyz.iloc[i,0] == 'O':
+            z.append(8)
+        elif xyz.iloc[i,0] == 'Cl':
+            z.append(17)
+    return z
+
+def f_x_kirk(s,zi):
+    """Scattering factor calculation kirkland method
+    
+    
+    """
+    p = kirk_scat(zi)
+    q = np.divide(s,math.pi*2)
+    
+    q_sq = np.multiply(q,q)
+    
+    f = np.divide(p['a1'],q_sq+p['b1'])+np.divide(p['a2'],q_sq+p['b2'])+np.divide(p['a3'],q_sq+p['b3'])
+    
+    f = f + p['c1']*np.exp(-p['d1']*q_sq) + p['c2']*np.exp(-p['d2']*q_sq) + p['c3']*np.exp(-p['d3']*q_sq)
+    
+    return f
+
+
+
+def scattering_int(xyz,dim,N_atoms,s):
+    """
+    Calculates the scattering intensity
+    Input parameters: xyz = geometry data
+                      dim = detector size in pixels 
+                      N_atoms = Number of atoms in the molecule
+                      s = scattering vector calculated in the main program body
+    output: Iat = Atomic scattering intensity
+            Imol = Molecular scattering intensity
+    
+    """
+    IAt = np.zeros(dim)
+    Imol = np.zeros(dim)
+
+    pi = 0
+    Z = find_z(xyz)
+ 
+    for i in range(N_atoms):
+        for j in range(i+1):
+            zi = Z[i]
+            zj = Z[j]
+            #print('Zi = {}, Zj = {}'.format(zi,zj))
+            
+            #fi,fj are the elastic scattering amplitude of atoms
+            fi = f_x_kirk(s,zi)
+            fj = f_x_kirk(s,zj)
+            
+            if (i == j):
+                IAt = IAt + np.multiply(fi,fj)
+                #print('rij = 0')
+                
+            else:
+                #We can divide the Imol(s) into 3 parts, first the scatering factor
+                #second the cos (phase) factor and 3rd the sin factor
+                
+                #scat factor calculation
+                scat_fact = np.multiply(fi,fj)
+                
+                #sin factor calculation 
+                r1 = xyz.iloc[i,1]-xyz.iloc[j,1]
+                r2 = xyz.iloc[i,2]-xyz.iloc[j,2]
+                r3 = xyz.iloc[i,3]-xyz.iloc[j,3]
+                r_squared = r1**2+r2**2+r3**2
+                rij = math.sqrt(r_squared);#print('rij = {}'.format(rij))
+                sin_fact = np.divide(np.sin(np.multiply(rij,s)),np.multiply(rij,s))            
+                
+                #cos_factor calculation 
+                
+                #total
+                Imol = Imol + np.multiply(scat_fact,sin_fact)
+            pi=pi+1        
+            print('Pairs = {}'.format(pi))
+    return IAt, Imol
