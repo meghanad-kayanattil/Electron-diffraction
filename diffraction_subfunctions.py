@@ -24,8 +24,8 @@ def create_s_matrix(xcen = 391.55, ycen = 393.03):
     wavel = (planck_c*speed_light/(math.sqrt(KE*1000*(KE*1000+2*m0*speed_light**2*6.241506363e+18))));
     
 
-    x = np.arange(1,shape_det[0]+1)
-    y = np.arange(1,shape_det[1]+1)
+    x = np.arange(1,shape_det[0])
+    y = np.arange(1,shape_det[1])
     [xx,yy] = np.meshgrid(x,y)
 
     #Calculates the distance of each px to the center of the image in meters and in s units.
@@ -60,7 +60,7 @@ def rmatrix(xcen = 391.55, ycen = 393.03, size = 900):
     
     return d
 
-def diffraction_to_epdf(img, KE=50):
+def diffraction_to_azimuthal_avg(img, KE=50):
     #Defining experiment parameters
     #KE = 50 #kinetic energy of electrons kev
     planck_c = 4.135667516e-15 #planck constant
@@ -88,14 +88,14 @@ def diffraction_to_epdf(img, KE=50):
     #azimuthal integration using the intergate1d method
     #the default radial unit is “q_nm^1”, so the scattering vector length expressed in inverse nanometers. 
     #To be able to calculate q, one needs to specify the wavelength used
-    res = ai.integrate1d(img, 100)
+    res = ai.integrate1d(img, 300)
 
     #The ds in stuart's code is calculated as ds = (2*np.pi*pixelSize*radialDist[0])/(wavel*distanceDet)
     #here I believe that is done by 2*pi*pixel_size/(wavel/distanceDet)
     s = res[0]*0.1 
-    sMs = res[1]
+    Az = res[1]
     
-    return s, sMs
+    return s,Az
 
 def function_inside(s,sMs,r):
     k = 0.02
@@ -106,7 +106,7 @@ def function_inside(s,sMs,r):
     return out
 
 def sms_to_mrdf(s,sMs):
-    r = np.linspace(0,8, 100)
+    r = np.linspace(0,6, 300)
     mrdf = []
 
 
@@ -114,7 +114,7 @@ def sms_to_mrdf(s,sMs):
         y = function_inside(s, sMs, ri)
         area = metrics.auc(s,y)
         mrdf.append(area)
-    return mrdf
+    return r, mrdf
 
 def find_z(xyz):
     """ This functon retuns the atomic numbers of the elements in the molecule into a list
@@ -132,12 +132,12 @@ def find_z(xyz):
             z.append(17)
     return z
 
-def f_x_kirk(s,zi):
+def f_x_kirk(s,zi, kirkland):
     """Scattering factor calculation kirkland method
     
     
     """
-    p = kirk_scat(zi)
+    p = kirk_scat(zi, kirkland)
     q = np.divide(s,math.pi*2)
     
     q_sq = np.multiply(q,q)
@@ -150,7 +150,7 @@ def f_x_kirk(s,zi):
 
 
 
-def scattering_int(xyz,dim,N_atoms,s):
+def scattering_int(xyz,dim,N_atoms,s, kirkland):
     """
     Calculates the scattering intensity
     Input parameters: xyz = geometry data
@@ -168,14 +168,17 @@ def scattering_int(xyz,dim,N_atoms,s):
     Z = find_z(xyz)
  
     for i in range(N_atoms):
+        zi = Z[i]
+        fi = f_x_kirk(s,zi, kirkland)
         for j in range(i+1):
-            zi = Z[i]
+           
             zj = Z[j]
+            fj = f_x_kirk(s,zj, kirkland)
             #print('Zi = {}, Zj = {}'.format(zi,zj))
             
             #fi,fj are the elastic scattering amplitude of atoms
-            fi = f_x_kirk(s,zi)
-            fj = f_x_kirk(s,zj)
+            
+            
             
             if (i == j):
                 IAt = IAt + np.multiply(fi,fj)
@@ -201,5 +204,34 @@ def scattering_int(xyz,dim,N_atoms,s):
                 #total
                 Imol = Imol + np.multiply(scat_fact,sin_fact)
             pi=pi+1        
-            print('Pairs = {}'.format(pi))
+            #print('Pairs = {}'.format(pi))
     return IAt, Imol
+
+import os 
+import pandas as pd
+
+
+
+def kirk_scat(zi, kirkland):
+    """ The function takes in the atomic number and returns the scattering (Kirkland) function constant values for 
+        that specific atom
+        Input = Z (Atomic number)
+        Output = Scattering vector dictionary with constants (form factors)
+    """
+    ab_vals = ['a1','b1','a2','b2','a3','b3','c1','d1','c2','d2','c3','d3'] 
+    s_fact = np.array(kirkland.iloc[zi-1])
+    s_fact = dict(zip(ab_vals,s_fact))
+    return s_fact
+
+def diff_image_generator(file):
+    kirkland_path = os.path.join(r'\\win.desy.de\home\kayanatm\My Documents\GitHub\Electron-diffraction','KirklandScattering.txt')
+    kirkland_scat_fact = pd.read_csv(kirkland_path,sep ='\s+', header=None)
+    xyz = pd.read_csv(file, sep = '\s+', dtype='str',names = ['Atoms', 'x', 'y', 'z'])
+
+    xyz[["x", "y", "z"]] = xyz[["x", "y", "z"]].apply(pd.to_numeric)
+    
+    s = create_s_matrix()
+    
+    Iatom_kirk, Imol_kirk = scattering_int(xyz, dim = [899,899],s=s, N_atoms=len(xyz), kirkland=kirkland_scat_fact)
+    
+    return Iatom_kirk, Imol_kirk
