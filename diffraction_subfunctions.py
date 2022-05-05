@@ -60,7 +60,7 @@ def rmatrix(xcen = 391.55, ycen = 393.03, size = 900):
     
     return d
 
-def diffraction_to_azimuthal_avg(img, KE=50):
+def diffraction_to_azimuthal_avg(img, xcen, ycen,  KE=50):
     #Defining experiment parameters
     #KE = 50 #kinetic energy of electrons kev
     planck_c = 4.135667516e-15 #planck constant
@@ -70,8 +70,8 @@ def diffraction_to_azimuthal_avg(img, KE=50):
     print("Electron beam wavelength = {} m".format(lambda_e))
 
     #Defining the detector parameters this can be adapted from the experiment
-    xcen = 391.55 #center of the diffraction
-    ycen = 393.03 #center of the diffraction
+    #xcen = 391.55 #center of the diffraction
+    #ycen = 393.03 #center of the diffraction
     pixel_size = 4.8e-5 #size of the pixel
     
     distanceDet = 0.5 # in m 
@@ -88,7 +88,7 @@ def diffraction_to_azimuthal_avg(img, KE=50):
     #azimuthal integration using the intergate1d method
     #the default radial unit is “q_nm^1”, so the scattering vector length expressed in inverse nanometers. 
     #To be able to calculate q, one needs to specify the wavelength used
-    res = ai.integrate1d(img, 300)
+    res = ai.integrate1d(img, 200)
 
     #The ds in stuart's code is calculated as ds = (2*np.pi*pixelSize*radialDist[0])/(wavel*distanceDet)
     #here I believe that is done by 2*pi*pixel_size/(wavel/distanceDet)
@@ -223,15 +223,19 @@ def kirk_scat(zi, kirkland):
     s_fact = dict(zip(ab_vals,s_fact))
     return s_fact
 
-def diff_image_generator(file):
+def diff_image_generator(file, xcen, ycen):
     kirkland_path = os.path.join(r'\\win.desy.de\home\kayanatm\My Documents\GitHub\Electron-diffraction','KirklandScattering.txt')
     kirkland_scat_fact = pd.read_csv(kirkland_path,sep ='\s+', header=None)
     xyz = pd.read_csv(file, sep = '\s+', dtype='str',names = ['Atoms', 'x', 'y', 'z'])
 
     xyz[["x", "y", "z"]] = xyz[["x", "y", "z"]].apply(pd.to_numeric)
     
-    s = create_s_matrix()
+    s = create_s_matrix(xcen, ycen)
     
     Iatom_kirk, Imol_kirk = scattering_int(xyz, dim = [899,899],s=s, N_atoms=len(xyz), kirkland=kirkland_scat_fact)
     
     return Iatom_kirk, Imol_kirk
+
+
+def inelastic_scattering(file, xcen = 391.55, ycen = 393.03):
+    return
