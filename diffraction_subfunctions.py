@@ -239,3 +239,12 @@ def diff_image_generator(file, xcen, ycen):
 
 def inelastic_scattering(file, xcen = 391.55, ycen = 393.03):
     return
+
+def normalize(arr):
+    max_value = np.max(arr)
+    min_value = np.min(arr)
+    out = []
+    for i in range(0, len(arr)):
+        out.append((arr[i] - min_value) / (max_value - min_value))
+    
+    return np.array(out)
