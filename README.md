@@ -4,4 +4,5 @@ This repository contains all the data analysis scripts used for the processing, 
 Since majority of the work is part of a manuscript, updated notebooks will be made public as soon as possible.
 
 An example of the simulated electron diffraction pattern of CCl4:
+
 ![diffraction_modified_scattering_glycerol_isolated](https://github.com/meghanad-kayanattil/Electron-diffraction/blob/main/Itot_ccl4_simulated_kirk.png)
