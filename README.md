@@ -9,6 +9,10 @@ An example of the simulated electron diffraction pattern of CCl4:
 
 ![diffraction_modified_scattering_glycerol_isolated](https://github.com/meghanad-kayanattil/Electron-diffraction/blob/main/Itot_ccl4_simulated_kirk.png)
 
+## Prerequisite
+
+Essential libraries required for the simulation are, numpy, pandas, matplolib, pyFAI, there are other standard libraries like os, cv2 etc used for file handling and image processing in different notebooks as well, but for the simulation of electron diffraction pattern they are not required. 
+
 ## Usage/Examples
 
 There are a few analysis/simulation which can be done
