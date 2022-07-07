@@ -11,7 +11,7 @@ An example of the simulated electron diffraction pattern of CCl4:
 
 ## Prerequisite
 
-Essential libraries required for the simulation are, numpy, pandas, matplolib, pyFAI, there are other standard libraries like os, cv2 etc used for file handling and image processing in different notebooks as well, but for the simulation of electron diffraction pattern they are not required. 
+Essential libraries required for the simulation are, numpy, pandas, matplolib, and pyFAI. There are other standard libraries like os, cv2 etc used for file handling and image processing in different notebooks as well, but for the simulation of electron diffraction pattern they are not required. 
 
 ## Usage/Examples
 
